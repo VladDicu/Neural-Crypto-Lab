@@ -11,7 +11,13 @@ import plotly.express as px
 from sklearn.decomposition import PCA
 import tempfile
 import os
+import math
 
+def entropie_shannon(text):
+    if not text: return 0.0
+    prob = [float(text.count(c)) / len(text) for c in set(text)]
+    return -sum(p * math.log2(p) for p in prob)
+    
 BLOCK_SIZE = 64
 
 # ==========================================
@@ -142,11 +148,17 @@ def simuleaza_laborator(mesaj, tip_eve, tip_scenariu, epoci):
             cifru_bruiat = [c + (torch.randn_like(c) * 1.5) for c in cifru_tranzitat]
             text_brut_bob = reconstruieste(flux_cbc(bob, cifru_bruiat, cheie, vi, 'dec'), lungime)
 
+    ent_bob = entropie_shannon(text_brut_bob)
+    ent_eve = entropie_shannon(rezultat_eve)
+    
+    rezultat_eve_final = f"{rezultat_eve}\n\n📊 Entropie Eve: {ent_eve:.2f} biți/simbol"
+
     grad_similitudine = difflib.SequenceMatcher(None, mesaj, text_brut_bob).ratio()
+    
     if grad_similitudine > 0.85: 
-        rezultat_bob = f"🔒 [INTEGRITATE VERIFICATĂ] Semnătură Neurală Validă ({grad_similitudine*100:.1f}%)\n--> {text_brut_bob}"
+        rezultat_bob = f"🔒 [INTEGRITATE VERIFICATĂ] Semnătură Validă ({grad_similitudine*100:.1f}%)\n--> {text_brut_bob}\n\n📊 Entropie Bob: {ent_bob:.2f} biți/simbol"
     else:
-        rezultat_bob = f"🚨 [ALERTĂ CRITICĂ] Integritate eșuată ({grad_similitudine*100:.1f}%).\nConexiune RESPINSĂ automat."
+        rezultat_bob = f"🚨 [ALERTĂ CRITICĂ] Integritate eșuată ({grad_similitudine*100:.1f}%).\nConexiune RESPINSĂ automat.\n\n📊 Entropie Bob (Zgomot): {ent_bob:.2f} biți/simbol"
 
     fig, ax = plt.subplots(figsize=(5, 3))
     ax.plot(istoric_loss_eve, color='red', label="Curba Erorii lui Eve")
@@ -154,8 +166,7 @@ def simuleaza_laborator(mesaj, tip_eve, tip_scenariu, epoci):
     ax.set_ylabel("Loss"); ax.set_xlabel("Epoci")
     ax.legend(); fig.tight_layout()
 
-    return log_tcp, rezultat_bob, rezultat_eve, fig
-
+    return log_tcp, rezultat_bob, rezultat_eve_final, fig
 # ==========================================
 # 4. MOTOR VIZUALIZARE CONEXIUNE (FILA 2)
 # ==========================================
