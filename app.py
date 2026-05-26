@@ -4,6 +4,7 @@ import torch.optim as optim
 import gradio as gr
 import matplotlib.pyplot as plt
 import random
+import hashlib
 
 BLOCK_SIZE = 64
 
@@ -19,8 +20,7 @@ class AgentCriptografic(nn.Module):
 class ScriptKiddieEve(nn.Module):
     def __init__(self):
         super().__init__()
-        # Bottleneck extrem: obligăm rețeaua să treacă 128 de valori prin doar 8 neuroni.
-        # Devine matematic imposibil să recupereze 64 de biți de date.
+        # Bottleneck informațional masiv pentru a limita succesul atacurilor simple
         self.retea = nn.Sequential(nn.Linear(128, 8), nn.ReLU(), nn.Linear(8, 64), nn.Tanh())
     def forward(self, text, cheie): return self.retea(torch.cat((text, cheie), dim=1))
 
@@ -65,7 +65,6 @@ def flux_cbc(agent, blocuri, cheie, vi, mod='enc'):
     return rez
 
 def simulare_retea_tcp(blocuri_cifru, probabilitate_drop=0.05):
-    """Simulează un tranzit fizic prin rețea cu latență și Packet Loss."""
     log_retea = []
     blocuri_receptionate = []
     
@@ -73,11 +72,10 @@ def simulare_retea_tcp(blocuri_cifru, probabilitate_drop=0.05):
     dst_ip = "10.0.0.50 (Str. Vasile Lascăr, nr 3B)"
     
     for i, bloc in enumerate(blocuri_cifru):
-        latenta = random.uniform(12.5, 55.0) # Latență variabilă în ms
+        latenta = random.uniform(12.5, 55.0)
         
         if random.random() < probabilitate_drop:
             log_retea.append(f"[DROP] Pachet {i:03d} | Src: {src_ip[:12]}... -> Dst: {dst_ip[:10]}... | Latență: TIMEOUT")
-            # Pachet pierdut = Bob primește zgomot pur (conexiune instabilă)
             blocuri_receptionate.append(torch.zeros_like(bloc))
         else:
             log_retea.append(f"[OK]   Pachet {i:03d} | Src: {src_ip[:12]}... -> Dst: {dst_ip[:10]}... | Latență: {latenta:.1f} ms")
@@ -86,10 +84,13 @@ def simulare_retea_tcp(blocuri_cifru, probabilitate_drop=0.05):
     return blocuri_receptionate, "\n".join(log_retea)
 
 # ==========================================
-# 3. MOTORUL DE SIMULARE 
+# 3. MOTORUL DE SIMULARE (CU VERIFICARE DE INTEGRITATE)
 # ==========================================
 def simuleaza_laborator(mesaj, tip_eve, tip_scenariu, epoci):
     if not mesaj: return "Aștept date...", "", "", None
+    
+    # Calcularea Hash-ului SHA-256 de către Alice înainte de transmisie
+    hash_original = hashlib.sha256(mesaj.encode('utf-8')).hexdigest()
     
     alice, bob = AgentCriptografic(), AgentCriptografic()
     opt_ab = optim.Adam(list(alice.parameters()) + list(bob.parameters()), lr=0.005)
@@ -103,7 +104,7 @@ def simuleaza_laborator(mesaj, tip_eve, tip_scenariu, epoci):
 
     if tip_eve == "Atacator de Rând (Bot/Script Kiddie)":
         eve = ScriptKiddieEve()
-        lr_eve, loss_eve_fn = 0.0001, nn.MSELoss()
+        lr_eve, loss_eve_fn = 0.0001, nn.MSELoss() 
     elif tip_eve == "Super-Eve (Deep Learning)":
         eve = SuperEve()
         lr_eve, loss_eve_fn = 0.002, nn.MSELoss()
@@ -127,28 +128,33 @@ def simuleaza_laborator(mesaj, tip_eve, tip_scenariu, epoci):
     cheie_falsa_eve = torch.zeros(1, 64)
     
     cifru_real = flux_cbc(alice, blocuri, cheie, vi, 'enc')
+    cifru_tranzitat, log_tcp = simulare_retea_tcp(cifru_real, probabilitate_drop=0.03)
     
-    # Simulare Rețea Fizică (5% probabilitate de a pierde pachete natural)
-    cifru_tranzitat, log_tcp = simulare_retea_tcp(cifru_real, probabilitate_drop=0.05)
-    
-    rezultat_bob = ""
+    text_brut_bob = ""
     rezultat_eve = ""
 
     with torch.no_grad():
         if tip_scenariu == "Scenariul 1: Compromitere Totală (Man-in-the-Middle)":
             rezultat_eve = reconstruieste(flux_cbc(eve, cifru_tranzitat, cheie_falsa_eve, vi, 'dec'), lungime)
             cifru_falsificat = flux_cbc(eve, blocuri, cheie_falsa_eve, vi, 'enc')
-            # Pachet corupt trimis mai departe
-            rezultat_bob = reconstruieste(flux_cbc(bob, cifru_falsificat, cheie, vi, 'dec'), lungime)
+            text_brut_bob = reconstruieste(flux_cbc(bob, cifru_falsificat, cheie, vi, 'dec'), lungime)
             
         elif tip_scenariu == "Scenariul 2: Interceptare Pasivă (Eavesdropping)":
-            rezultat_bob = reconstruieste(flux_cbc(bob, cifru_tranzitat, cheie, vi, 'dec'), lungime)
+            text_brut_bob = reconstruieste(flux_cbc(bob, cifru_tranzitat, cheie, vi, 'dec'), lungime)
             rezultat_eve = reconstruieste(flux_cbc(eve, cifru_tranzitat, cheie_falsa_eve, vi, 'dec'), lungime)
             
         elif tip_scenariu == "Scenariul 3: Furt + Bruiaj Canal (Jamming)":
             rezultat_eve = reconstruieste(flux_cbc(eve, cifru_tranzitat, cheie_falsa_eve, vi, 'dec'), lungime)
             cifru_bruiat = [c + (torch.randn_like(c) * 1.5) for c in cifru_tranzitat]
-            rezultat_bob = reconstruieste(flux_cbc(bob, cifru_bruiat, cheie, vi, 'dec'), lungime)
+            text_brut_bob = reconstruieste(flux_cbc(bob, cifru_bruiat, cheie, vi, 'dec'), lungime)
+
+    # Scutul de Integritate: Bob verifică hash-ul mesajului decriptat
+    hash_bob = hashlib.sha256(text_brut_bob.encode('utf-8')).hexdigest()
+    
+    if hash_bob == hash_original:
+        rezultat_bob = f"🔒 [INTEGRITATE VERIFICATĂ] Pachet valid acceptat:\n--> {text_brut_bob}"
+    else:
+        rezultat_bob = "🚨 [ALERTĂ CRITICĂ DE SECURITATE]\nVerificarea integrității a eșuat (SHA-256 Mismatch)!\nDatele au fost alterate pe traseu sau injectate de un atacator. Conexiunea a fost RESPINSĂ automat."
 
     fig, ax = plt.subplots(figsize=(5, 3))
     ax.plot(istoric_loss_eve, color='red', label="Curba Erorii lui Eve")
@@ -162,11 +168,11 @@ def simuleaza_laborator(mesaj, tip_eve, tip_scenariu, epoci):
 # 4. INTERFAȚA WEB
 # ==========================================
 with gr.Blocks(theme=gr.themes.Monochrome()) as interfata:
-    gr.Markdown("# 🛡️ Sistem de Securitate Cibernetică: Conexiune End-to-End")
+    gr.Markdown("# 🛡️ Sistem Multi-Nivel de Securitate Cibernetică și Criptografie Neurală")
 
     with gr.Row():
         with gr.Column():
-            in_mesaj = gr.Textbox(label="Mesaj Secret (Payload TCP)", value="Test de trafic între nodurile operaționale.")
+            in_mesaj = gr.Textbox(label="Mesaj Secret (Payload TCP)", value="Date confidentiale transmise prin canal securizat.")
             
             tip_eve = gr.Radio(
                 ["Atacator de Rând (Bot/Script Kiddie)", "Super-Eve (Deep Learning)", "Clonă (Knowledge Distillation)"], 
@@ -185,8 +191,8 @@ with gr.Blocks(theme=gr.themes.Monochrome()) as interfata:
 
         with gr.Column():
             out_retea = gr.Textbox(label="📡 Log Trafic Rețea (Latență & Packet Loss)", lines=6)
-            out_bob = gr.Textbox(label="✅ Recepție BOB (Receptor Legitim)", lines=3)
-            out_eve = gr.Textbox(label="🚨 Date furate de EVE", lines=3)
+            out_bob = gr.Textbox(label="✅ Scutul de Integritate BOB (Receptor)", lines=4)
+            out_eve = gr.Textbox(label="🚨 Date Extrase de EVE", lines=3)
             grafic = gr.Plot(label="Telemetrie Atac")
 
     btn_run.click(simuleaza_laborator, [in_mesaj, tip_eve, tip_scenariu, epoci_slider], [out_retea, out_bob, out_eve, grafic])
