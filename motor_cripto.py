@@ -148,17 +148,16 @@ def simuleaza_laborator(mesaj, tip_eve, tip_scenariu, epoci):
             cifru_bruiat = [c + (torch.randn_like(c) * 1.5) for c in cifru_tranzitat]
             text_brut_bob = reconstruieste(flux_cbc(bob, cifru_bruiat, cheie, vi, 'dec'), lungime)
 
-    ent_bob = entropie_shannon(text_brut_bob)
-    ent_eve = entropie_shannon(rezultat_eve)
+    # Calculăm procentul de acuratețe
+    acuratete_bob = difflib.SequenceMatcher(None, mesaj, text_brut_bob).ratio() * 100
+    acuratete_eve = difflib.SequenceMatcher(None, mesaj, rezultat_eve).ratio() * 100
     
-    rezultat_eve_final = f"{rezultat_eve}\n\n📊 Entropie Eve: {ent_eve:.2f} biți/simbol"
+    rezultat_eve_final = f"{rezultat_eve}\n\n📊 Date recuperate de Eve: {acuratete_eve:.1f}%"
 
-    grad_similitudine = difflib.SequenceMatcher(None, mesaj, text_brut_bob).ratio()
-    
-    if grad_similitudine > 0.85: 
-        rezultat_bob = f"🔒 [INTEGRITATE VERIFICATĂ] Semnătură Validă ({grad_similitudine*100:.1f}%)\n--> {text_brut_bob}\n\n📊 Entropie Bob: {ent_bob:.2f} biți/simbol"
+    if acuratete_bob > 85.0: 
+        rezultat_bob = f"🔒 [INTEGRITATE VERIFICATĂ] Semnătură Validă\n--> {text_brut_bob}\n\n📊 Date recuperate de Bob: {acuratete_bob:.1f}%"
     else:
-        rezultat_bob = f"🚨 [ALERTĂ CRITICĂ] Integritate eșuată ({grad_similitudine*100:.1f}%).\nConexiune RESPINSĂ automat.\n\n📊 Entropie Bob (Zgomot): {ent_bob:.2f} biți/simbol"
+        rezultat_bob = f"🚨 [ALERTĂ CRITICĂ] Integritate eșuată.\nConexiune RESPINSĂ automat.\n\n📊 Date recuperate de Bob: {acuratete_bob:.1f}%"
 
     fig, ax = plt.subplots(figsize=(5, 3))
     ax.plot(istoric_loss_eve, color='red', label="Curba Erorii lui Eve")
