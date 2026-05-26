@@ -121,7 +121,7 @@ def simuleaza_laborator(mesaj, tip_eve, tip_scenariu, epoci):
     cheie_falsa_eve = torch.zeros(1, 64)
     
     cifru_real = flux_cbc(alice, blocuri, cheie, vi, 'enc')
-    cifru_tranzitat, log_tcp = simulare_retea_tcp(cifru_real, probabilitate_drop=0.03)
+    cifru_tranzitat, log_tcp = simulare_retea_tcp(cifru_real)
     
     text_brut_bob = ""
     rezultat_eve = ""
