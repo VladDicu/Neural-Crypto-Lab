@@ -19,7 +19,9 @@ class AgentCriptografic(nn.Module):
 class ScriptKiddieEve(nn.Module):
     def __init__(self):
         super().__init__()
-        self.retea = nn.Sequential(nn.Linear(128, 64), nn.ReLU(), nn.Linear(64, 64), nn.Tanh())
+        # Bottleneck extrem: obligăm rețeaua să treacă 128 de valori prin doar 8 neuroni.
+        # Devine matematic imposibil să recupereze 64 de biți de date.
+        self.retea = nn.Sequential(nn.Linear(128, 8), nn.ReLU(), nn.Linear(8, 64), nn.Tanh())
     def forward(self, text, cheie): return self.retea(torch.cat((text, cheie), dim=1))
 
 class SuperEve(nn.Module):
@@ -101,7 +103,7 @@ def simuleaza_laborator(mesaj, tip_eve, tip_scenariu, epoci):
 
     if tip_eve == "Atacator de Rând (Bot/Script Kiddie)":
         eve = ScriptKiddieEve()
-        lr_eve, loss_eve_fn = 0.001, nn.MSELoss()
+        lr_eve, loss_eve_fn = 0.0001, nn.MSELoss()
     elif tip_eve == "Super-Eve (Deep Learning)":
         eve = SuperEve()
         lr_eve, loss_eve_fn = 0.002, nn.MSELoss()
