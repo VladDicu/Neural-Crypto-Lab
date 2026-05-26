@@ -64,24 +64,17 @@ def flux_cbc(agent, blocuri, cheie, vi, mod='enc'):
             c_ant = b.sign()
     return rez
 
-def simulare_retea_tcp(blocuri_cifru, probabilitate_drop=0.05):
+def simulare_retea_tcp(blocuri_cifru):
     log_retea = []
-    blocuri_receptionate = []
-    
     src_ip = "192.168.1.10 (Str. Ankara, nr 2A)"
     dst_ip = "10.0.0.50 (Str. Vasile Lascăr, nr 3B)"
     
     for i, bloc in enumerate(blocuri_cifru):
         latenta = random.uniform(12.5, 55.0)
-        
-        if random.random() < probabilitate_drop:
-            log_retea.append(f"[DROP] Pachet {i:03d} | Src: {src_ip[:12]}... -> Dst: {dst_ip[:10]}... | Latență: TIMEOUT")
-            blocuri_receptionate.append(torch.zeros_like(bloc))
-        else:
-            log_retea.append(f"[OK]   Pachet {i:03d} | Src: {src_ip[:12]}... -> Dst: {dst_ip[:10]}... | Latență: {latenta:.1f} ms")
-            blocuri_receptionate.append(bloc)
+        # TCP asigură livrarea prin retransmisie (ACK), deci excludem drop-urile false
+        log_retea.append(f"[TCP ACK] Pachet {i:03d} | Src: {src_ip[:12]}... -> Dst: {dst_ip[:10]}... | Latență: {latenta:.1f} ms")
             
-    return blocuri_receptionate, "\n".join(log_retea)
+    return blocuri_cifru, "\n".join(log_retea)
 
 # ==========================================
 # 3. MOTORUL DE SIMULARE (CU VERIFICARE DE INTEGRITATE)
