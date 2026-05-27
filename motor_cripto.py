@@ -300,7 +300,7 @@ def compara_sisteme(mesaj, algoritm_ales):
             
     elif algoritm_ales == "RSA (Cheie Scurtă)":
         # Implementare Toy RSA (p=137, q=151 -> n=20687, e=17)
-        p, q, e = 137, 151, 17
+        p, q, e = 137, 151, 7
         n = p * q
         cifru_rsa = [pow(ord(c), e, n) for c in mesaj]
         cifru_vizual = "-".join(str(x) for x in cifru_rsa[:6]) + "... [Vector Int]"
