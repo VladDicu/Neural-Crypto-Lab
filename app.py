@@ -50,6 +50,21 @@ with gr.Blocks(theme=gr.themes.Monochrome()) as interfata:
                     grafic_pca = gr.Plot(label="Spațiul Latent 3D (Click & Drag pentru a roti cubul)")
 
             btn_viz.click(analizeaza_conexiune_vizual, [in_mesaj_viz, epoci_viz], [grafic_pca, radar_video])
+            # --- FILA 3: COMPARAȚIE CLASIC vs. AI ---
+        with gr.TabItem("⚖️ Evoluția Criptografiei: Clasic vs. AI"):
+            gr.Markdown("Test de penetrare: Un bot de nivel mediu atacă un algoritm clasic (matematic) comparativ cu criptografia generată de AI.")
+            
+            with gr.Row():
+                with gr.Column():
+                    in_mesaj_comp = gr.Textbox(label="Mesaj Test", value="Sistemele rigide sunt vulnerabile la forta bruta.")
+                    btn_comp = gr.Button("Lansează Atacul (Bot Script Kiddie)", variant="primary")
+                    cifru_clasic_out = gr.Textbox(label="Cifru Clasic Interceptat (Binar/Hex ascuns)")
+                    
+                with gr.Column():
+                    rez_clasic_out = gr.Textbox(label="🛑 Vulnerabilitate Clasic (Matematic)", lines=4)
+                    rez_neural_out = gr.Textbox(label="🛡️ Reziliență Neurală (AI)", lines=4)
+                    
+            btn_comp.click(compara_sisteme, inputs=[in_mesaj_comp], outputs=[cifru_clasic_out, rez_clasic_out, rez_neural_out])
 
 if __name__ == "__main__":
     interfata.launch()
