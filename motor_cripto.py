@@ -260,3 +260,33 @@ def analizeaza_conexiune_vizual(mesaj, epoci):
     gif_path = genereaza_animatie_radar(semnal_brut, valori_criptate_brute, valori_decriptate_brute)
 
     return fig_3d, gif_path
+
+import time
+
+def compara_sisteme(mesaj):
+    if not mesaj: return "", "", ""
+    
+    # 1. CRIPTOGRAFIA CLASICĂ (Ex: Cifru cu substituție)
+    start_time = time.time()
+    cifru_clasic = "".join(chr((ord(c) + 7) % 256) for c in mesaj)
+    
+    # Script Kiddie rulează un atac de tip "Brute Force"
+    cel_mai_bun_text = ""
+    scor_max = -1
+    for shift in range(256):
+        descifrat = "".join(chr((ord(c) - shift) % 256) for c in cifru_clasic)
+        # Evaluează textul în funcție de caracterele lizibile
+        scor = sum(1 for char in descifrat if char.isalnum() or char.isspace())
+        if scor > scor_max:
+            scor_max, cel_mai_bun_text = scor, descifrat
+            
+    timp_clasic = (time.time() - start_time) * 1000 # ms
+    acc_clasic = difflib.SequenceMatcher(None, mesaj, cel_mai_bun_text).ratio() * 100
+    
+    rez_clasic = f"🔓 [SISTEM COMPROMIS - FORȚĂ BRUTĂ]\n⏱️ Timp spargere: {timp_clasic:.2f} ms\n📊 Date recuperate de Eve: {acc_clasic:.1f}%\n--> {cel_mai_bun_text}"
+    
+    # 2. CRIPTOGRAFIA NEURALĂ (AI)
+    # Folosim direct funcția principală, setând atacatorul pe Script Kiddie
+    _, _, rez_eve_neural, _ = simuleaza_laborator(mesaj, "Atacator de Rând (Bot/Script Kiddie)", "Scenariul 2: Interceptare Pasivă (Eavesdropping)", 150)
+    
+    return cifru_clasic, rez_clasic, rez_eve_neural
