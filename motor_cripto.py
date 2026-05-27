@@ -12,7 +12,6 @@ from sklearn.decomposition import PCA
 import tempfile
 import os
 import math
-import time
 
 def entropie_shannon(text):
     if not text: return 0.0
