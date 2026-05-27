@@ -1,7 +1,7 @@
 import gradio as gr
-from motor_cripto import simuleaza_laborator, analizeaza_conexiune_vizual
+from motor_cripto import simuleaza_laborator, analizeaza_conexiune_vizual, compara_sisteme
 
-with gr.Blocks(theme=gr.themes.Monochrome()) as interfata:
+with gr.Blocks() as interfata:
     gr.Markdown("# 🛡️ Dashboard Central: Securitate Cibernetică & Analiză Neurală")
 
     with gr.Tabs():
@@ -67,4 +67,4 @@ with gr.Blocks(theme=gr.themes.Monochrome()) as interfata:
             btn_comp.click(compara_sisteme, inputs=[in_mesaj_comp], outputs=[cifru_clasic_out, rez_clasic_out, rez_neural_out])
 
 if __name__ == "__main__":
-    interfata.launch()
+    interfata.launch(theme=gr.themes.Monochrome())
