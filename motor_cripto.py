@@ -12,6 +12,7 @@ from sklearn.decomposition import PCA
 import tempfile
 import os
 import math
+import time
 
 def entropie_shannon(text):
     if not text: return 0.0
@@ -260,8 +261,6 @@ def analizeaza_conexiune_vizual(mesaj, epoci):
     gif_path = genereaza_animatie_radar(semnal_brut, valori_criptate_brute, valori_decriptate_brute)
 
     return fig_3d, gif_path
-
-import time
 
 def compara_sisteme(mesaj):
     if not mesaj: return "", "", ""
