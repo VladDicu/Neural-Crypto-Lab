@@ -262,30 +262,70 @@ def analizeaza_conexiune_vizual(mesaj, epoci):
 
     return fig_3d, gif_path
 
-def compara_sisteme(mesaj):
+def compara_sisteme(mesaj, algoritm_ales):
     if not mesaj: return "", "", ""
     
-    # 1. CRIPTOGRAFIA CLASICĂ (Ex: Cifru cu substituție)
     start_time = time.time()
-    cifru_clasic = "".join(chr((ord(c) + 7) % 256) for c in mesaj)
+    text_atacat_eve = ""
+    cifru_vizual = ""
     
-    # Script Kiddie rulează un atac de tip "Brute Force"
-    cel_mai_bun_text = ""
-    scor_max = -1
-    for shift in range(256):
-        descifrat = "".join(chr((ord(c) - shift) % 256) for c in cifru_clasic)
-        # Evaluează textul în funcție de caracterele lizibile
-        scor = sum(1 for char in descifrat if char.isalnum() or char.isspace())
-        if scor > scor_max:
-            scor_max, cel_mai_bun_text = scor, descifrat
+    if algoritm_ales == "Cifrul Cezar":
+        # Criptare Cezar clasică (Shift fix)
+        cifru_clasic = "".join(chr((ord(c) + 7) % 256) for c in mesaj)
+        cifru_vizual = cifru_clasic.encode('utf-8', errors='replace').hex()[:60] + "... [HEX]"
+        
+        # Script Kiddie rulează un atac complet de tip forță brută (256 încercări)
+        scor_max = -1
+        for shift in range(256):
+            descifrat = "".join(chr((ord(c) - shift) % 256) for c in cifru_clasic)
+            scor = sum(1 for char in descifrat if char.isalnum() or char.isspace())
+            if scor > scor_max:
+                scor_max, text_atacat_eve = scor, descifrat
+                
+    elif algoritm_ales == "Cifrul Vigenère":
+        # Criptare polialfabetică cu cheie scurtă repetitivă
+        cheie = "BIZ"
+        cifru_clasic = "".join(chr((ord(mesaj[i]) + ord(cheie[i % len(cheie)])) % 256) for i in range(len(mesaj)))
+        cifru_vizual = cifru_clasic.encode('utf-8', errors='replace').hex()[:60] + "... [HEX]"
+        
+        # Atacator automatizat rulează un atac de dicționar pe chei comune de rețea
+        dictionar_chei = ["AAA", "PASSWORD", "KEY", "BIZ", "123456"]
+        for k in dictionar_chei:
+            descifrat = "".join(chr((ord(cifru_clasic[i]) - ord(k[i % len(k)])) % 256) for i in range(len(cifru_clasic)))
+            if any(cuv in descifrat for cuv in ["date", "Sistemele", "vulnerabile", "test", "securizat"]):
+                text_atacat_eve = descifrat
+                break
+        if not text_atacat_eve: 
+            text_atacat_eve = "[Atac eșuat - Cheia nu e în dicționar]"
             
-    timp_clasic = (time.time() - start_time) * 1000 # ms
-    acc_clasic = difflib.SequenceMatcher(None, mesaj, cel_mai_bun_text).ratio() * 100
+    elif algoritm_ales == "RSA (Cheie Scurtă)":
+        # Implementare Toy RSA (p=137, q=151 -> n=20687, e=17)
+        p, q, e = 137, 151, 17
+        n = p * q
+        cifru_rsa = [pow(ord(c), e, n) for c in mesaj]
+        cifru_vizual = "-".join(str(x) for x in cifru_rsa[:6]) + "... [Vector Int]"
+        
+        # Atacatorul sparge cheia asimetrică prin factorizarea matematică trivială a lui N
+        p_spart, q_spart = 0, 0
+        for i in range(2, int(n**0.5) + 1):
+            if n % i == 0:
+                p_spart = i
+                q_spart = n // i
+                break
+        
+        if p_spart and q_spart:
+            phi = (p_spart - 1) * (q_spart - 1)
+            d_spart = pow(e, -1, phi)
+            text_atacat_eve = "".join(chr(pow(c, d_spart, n)) for c in cifru_rsa)
+        else:
+            text_atacat_eve = "[Eroare Factorizare]"
+            
+    timp_atins = (time.time() - start_time) * 1000 # Calculat în milisecunde
+    acc_clasic = difflib.SequenceMatcher(None, mesaj, text_atacat_eve).ratio() * 100
     
-    rez_clasic = f"🔓 [SISTEM COMPROMIS - FORȚĂ BRUTĂ]\n⏱️ Timp spargere: {timp_clasic:.2f} ms\n📊 Date recuperate de Eve: {acc_clasic:.1f}%\n--> {cel_mai_bun_text}"
+    rez_clasic = f"🔓 [SISTEM CLASIC COMPROMIS]\n⏱️ Timp spargere: {timp_atins:.2f} ms\n📊 Date extrase: {acc_clasic:.1f}%\n--> {text_atacat_eve}"
     
-    # 2. CRIPTOGRAFIA NEURALĂ (AI)
-    # Folosim direct funcția principală, setând atacatorul pe Script Kiddie
+    # Executăm paralela cu modelul nostru neural împotriva aceluiași tip de atacator pasiv
     _, _, rez_eve_neural, _ = simuleaza_laborator(mesaj, "Atacator de Rând (Bot/Script Kiddie)", "Scenariul 2: Interceptare Pasivă (Eavesdropping)", 150)
     
-    return cifru_clasic, rez_clasic, rez_eve_neural
+    return cifru_vizual, rez_clasic, rez_eve_neural
