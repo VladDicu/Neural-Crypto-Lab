@@ -1,5 +1,5 @@
 import gradio as gr
-from motor_cripto import simuleaza_laborator, analizeaza_conexiune_vizual, compara_sisteme
+from motor_cripto import simuleaza_laborator, analizeaza_conexiune_vizual
 
 with gr.Blocks() as interfata:
     gr.Markdown("# 🛡️ Dashboard Central: Securitate Cibernetică & Analiză Neurală")
